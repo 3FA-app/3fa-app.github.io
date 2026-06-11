@@ -1,0 +1,66 @@
+---
+import Base from '../layouts/Base.astro';
+import {
+  getLatestRelease,
+  PLATFORM_LABELS,
+  humanSize,
+  type Platform,
+} from '../lib/releases';
+
+const release = await getLatestRelease();
+const order: Platform[] = ['macos', 'windows', 'linux'];
+---
+
+<Base title="Download — 3FA">
+  <h1>Download 3FA</h1>
+  <p class="lede">
+    {release.version !== '0.0.0'
+      ? `Version ${release.version}`
+      : 'The first public build is on its way.'}
+  </p>
+
+  <div class="list">
+    {order.map((p) => {
+      const a = release.assets[p];
+      return (
+        <div class="row">
+          <div class="plat">{PLATFORM_LABELS[p]}</div>
+          {a ? (
+            <>
+              <a class="dl" href={a.url} download>Download .zip</a>
+              <code class="hash" title="SHA-256">{a.sha256.slice(0, 16)}…</code>
+              <span class="size">{humanSize(a.size)}</span>
+            </>
+          ) : (
+            <span class="pending">coming soon</span>
+          )}
+        </div>
+      );
+    })}
+  </div>
+
+  <h2>Installing</h2>
+  <p>Every download is a <code>.zip</code> containing the app plus a one-step installer:</p>
+  <ul>
+    <li><strong>macOS</strong> — unzip and run <code>./install.sh</code> (installs to <code>/Applications</code> and registers the app). Or drag <code>3FA.app</code> to Applications.</li>
+    <li><strong>Windows</strong> — unzip and run <code>install.ps1</code> (right-click → Run with PowerShell), which installs to <code>%LOCALAPPDATA%\Programs\3FA</code>.</li>
+    <li><strong>Linux</strong> — unzip and run <code>./install.sh</code> (installs the binary to <code>~/.local/bin</code> and a <code>.desktop</code> entry).</li>
+  </ul>
+  <p class="verify">
+    Verify integrity before installing — compare the SHA-256 above against
+    <code>shasum -a 256 &lt;file&gt;.zip</code> (macOS/Linux) or
+    <code>Get-FileHash</code> (Windows).
+  </p>
+
+  <style>
+    .list { margin: 24px 0; }
+    .row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid #23232c; }
+    .plat { width: 120px; font-weight: 600; }
+    .dl { color: #5d9cff; text-decoration: none; }
+    .hash { color: #6b7180; font-size: 12px; }
+    .size { color: #8a90a0; font-size: 13px; margin-left: auto; }
+    .pending { color: #6b7180; }
+    code { background: #1c1c24; padding: 2px 6px; border-radius: 5px; }
+    .verify { color: #aeb4c2; font-size: 14px; }
+  </style>
+</Base>

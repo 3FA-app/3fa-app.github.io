@@ -1,0 +1,84 @@
+---
+import {
+  getLatestRelease,
+  PLATFORM_LABELS,
+  humanSize,
+  type Platform,
+} from '../lib/releases';
+
+const release = await getLatestRelease();
+const order: Platform[] = ['macos', 'windows', 'linux'];
+const available = order.filter((p) => release.assets[p]);
+
+// Escape `<` so embedded JSON can never break out of the <script> element
+// (defence-in-depth even though the data is our own trusted manifest).
+const releaseJson = JSON.stringify(release.assets).replace(/</g, '\\u003c');
+---
+
+<div class="downloads">
+  <!-- Primary button: auto-detects the visitor's OS client-side. -->
+  <a id="primary-download" class="btn primary" href="/download" data-detected="">
+    Download for your platform
+  </a>
+
+  <div class="all-platforms">
+    {available.map((p) => {
+      const a = release.assets[p]!;
+      return (
+        <a class="btn" href={a.url} data-platform={p} download>
+          {PLATFORM_LABELS[p]}
+          <span class="meta">{humanSize(a.size)}</span>
+        </a>
+      );
+    })}
+    {available.length === 0 && (
+      <p class="soon">Builds are being published — check back shortly.</p>
+    )}
+  </div>
+
+  <p class="version">
+    {release.version !== '0.0.0' ? `Latest: v${release.version}` : ''}
+  </p>
+</div>
+
+<script type="application/json" id="release-data" set:html={releaseJson} />
+<script>
+  // Detect the OS and point the primary button at the right asset.
+  const data = JSON.parse(
+    document.getElementById('release-data')?.textContent || '{}'
+  );
+  const ua = navigator.userAgent;
+  let plat: 'macos' | 'windows' | 'linux' | null = null;
+  if (/Mac/i.test(ua)) plat = 'macos';
+  else if (/Win/i.test(ua)) plat = 'windows';
+  else if (/Linux|X11/i.test(ua)) plat = 'linux';
+
+  const btn = document.getElementById('primary-download') as HTMLAnchorElement | null;
+  const labels: Record<string, string> = {
+    macos: 'macOS',
+    windows: 'Windows',
+    linux: 'Linux',
+  };
+  if (btn && plat && data[plat]) {
+    btn.href = data[plat].url;
+    btn.setAttribute('download', '');
+    btn.textContent = `Download for ${labels[plat]}`;
+  }
+</script>
+
+<style>
+  .downloads { display: flex; flex-direction: column; align-items: center; gap: 16px; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 10px;
+    padding: 12px 22px; border-radius: 10px;
+    background: #1e1e26; color: #e8eaf0; text-decoration: none;
+    border: 1px solid #2c2c38; font-size: 15px;
+  }
+  .btn:hover { background: #2a2a36; }
+  .btn.primary { background: #5d9cff; color: #0b0b10; font-weight: 600; font-size: 17px; padding: 14px 28px; }
+  .btn.primary:hover { background: #74acff; }
+  .all-platforms { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .meta { color: #8a90a0; font-size: 12px; }
+  .version { color: #8a90a0; font-size: 13px; }
+  .soon { color: #8a90a0; }
+</style>

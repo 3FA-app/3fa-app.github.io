@@ -1,0 +1,6 @@
+# Responsible disclosure policy for 3FA (RFC 9116).
+Contact: mailto:security@threefa.app
+Expires: 2027-06-11T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://threefa.app/.well-known/security.txt
+Policy: https://threefa.app/security

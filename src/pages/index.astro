@@ -1,0 +1,59 @@
+---
+import Base from '../layouts/Base.astro';
+import DownloadButtons from '../components/DownloadButtons.astro';
+
+const features = [
+  ['Native & tiny', 'Built in Rust with a pure-native Slint UI — no Electron, no webview. ~10 MB install, low memory.'],
+  ['Multi-factor lock', 'Codes stay sealed behind a 6-digit passcode, Touch ID / Windows Hello, a hardware passkey, or your voice.'],
+  ['Auto-lock', 'Locks itself after 90 seconds idle. Staying open up to 5 minutes requires a second factor.'],
+  ['Zero-knowledge sync', 'Your vault is end-to-end encrypted before it leaves the device. Our servers only ever see ciphertext.'],
+  ['Standards-based', 'RFC 6238 TOTP and RFC 4226 HOTP — works with Google, GitHub, AWS, and any service you already use.'],
+  ['On-device biometrics', 'Voiceprint and fingerprint never leave your machine. No biometric data is uploaded, ever.'],
+];
+---
+
+<Base>
+  <section class="hero">
+    <h1>The authenticator your desktop was missing.</h1>
+    <p class="lede">
+      Authy and Google Authenticator don't run on your computer. 3FA does —
+      and locks your one-time codes behind real hardware security.
+    </p>
+    <div class="cta">
+      <DownloadButtons />
+    </div>
+  </section>
+
+  <section id="security">
+    <h2>Built for security, not bloat</h2>
+    <div class="grid">
+      {features.map(([title, body]) => (
+        <div class="card">
+          <h3>{title}</h3>
+          <p>{body}</p>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <section>
+    <h2>How the lock works</h2>
+    <ol class="steps">
+      <li>Seeds are encrypted with XChaCha20-Poly1305 under a key derived from your passcode (Argon2id) and sealed to the Secure Enclave / TPM.</li>
+      <li>Unlock with passcode, biometric, passkey, or voice — configure 2FA or 3FA per your threat model.</li>
+      <li>Idle 90s → auto-lock. Need longer? Present a second, distinct factor for up to 5 minutes.</li>
+      <li>Optional sync encrypts the whole vault end-to-end; the server stores an opaque blob it can never read.</li>
+    </ol>
+  </section>
+</Base>
+
+<style>
+  .hero { text-align: center; padding: 24px 0 8px; }
+  .cta { margin-top: 32px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 20px; }
+  .card { background: #1c1c24; border: 1px solid #262630; border-radius: 12px; padding: 18px; }
+  .card h3 { margin: 0 0 8px; color: #5d9cff; font-size: 16px; }
+  .card p { margin: 0; color: #c7ccd6; font-size: 14px; }
+  .steps { color: #c7ccd6; }
+  .steps li { margin-bottom: 10px; }
+</style>
