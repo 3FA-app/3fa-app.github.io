@@ -57,9 +57,13 @@ const order: Platform[] = ['macos', 'windows', 'linux'];
     <li><strong>Linux</strong> — unzip and run <code>./install.sh</code> (installs the binary to <code>~/.local/bin</code> and a <code>.desktop</code> entry).</li>
   </ul>
   <p class="verify">
-    Verify integrity before installing — compare the SHA-256 above against
+    Verify integrity before installing — compare the full SHA-256 above against
     <code>shasum -a 256 &lt;file&gt;.zip</code> (macOS/Linux) or
-    <code>Get-FileHash</code> (Windows).
+    <code>Get-FileHash &lt;file&gt;.zip</code> (Windows). The installer also checks a
+    bundled checksum manifest automatically and refuses to install on a mismatch.
+    A matching checksum confirms the download wasn&apos;t corrupted in transit; for
+    end-to-end authenticity, signed releases additionally ship a verifiable
+    signature.
   </p>
 
   <style>
