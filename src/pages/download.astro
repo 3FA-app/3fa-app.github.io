@@ -24,15 +24,25 @@ const order: Platform[] = ['macos', 'windows', 'linux'];
       const a = release.assets[p];
       return (
         <div class="row">
-          <div class="plat">{PLATFORM_LABELS[p]}</div>
-          {a ? (
-            <>
-              <a class="dl" href={a.url} download>Download .zip</a>
-              <code class="hash" title="SHA-256">{a.sha256.slice(0, 16)}…</code>
-              <span class="size">{humanSize(a.size)}</span>
-            </>
-          ) : (
-            <span class="pending">coming soon</span>
+          <div class="top">
+            <div class="plat">{PLATFORM_LABELS[p]}</div>
+            {a ? (
+              <>
+                <a class="dl" href={a.url} download>Download .zip</a>
+                <span class="size">{humanSize(a.size)}</span>
+              </>
+            ) : (
+              <span class="pending">coming soon</span>
+            )}
+          </div>
+          {a && (
+            <dl class="meta">
+              <dt>File</dt>
+              <dd><code>{a.filename}</code></dd>
+              <dt>SHA-256</dt>
+              {/* Full digest, selectable, so users can actually verify it. */}
+              <dd><code class="hash" title="Full SHA-256 — compare against your downloaded file">{a.sha256}</code></dd>
+            </dl>
           )}
         </div>
       );
@@ -54,13 +64,25 @@ const order: Platform[] = ['macos', 'windows', 'linux'];
 
   <style>
     .list { margin: 24px 0; }
-    .row { display: flex; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid #23232c; }
+    .row { padding: 14px 0; border-bottom: 1px solid #23232c; }
+    .top { display: flex; align-items: center; gap: 16px; }
     .plat { width: 120px; font-weight: 600; }
     .dl { color: #5d9cff; text-decoration: none; }
-    .hash { color: #6b7180; font-size: 12px; }
     .size { color: #8a90a0; font-size: 13px; margin-left: auto; }
     .pending { color: #6b7180; }
+    .meta {
+      display: grid; grid-template-columns: max-content 1fr;
+      gap: 4px 12px; margin: 10px 0 0; padding-left: 0;
+    }
+    .meta dt { color: #6b7180; font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .meta dd { margin: 0; min-width: 0; }
     code { background: #1c1c24; padding: 2px 6px; border-radius: 5px; }
+    /* Full digest must stay readable/selectable on any width. */
+    .hash {
+      color: #aeb4c2; font-size: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      word-break: break-all; user-select: all;
+    }
     .verify { color: #aeb4c2; font-size: 14px; }
   </style>
 </Base>
