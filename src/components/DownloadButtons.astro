@@ -59,10 +59,13 @@ const releaseJson = JSON.stringify(release.assets).replace(/</g, '\\u003c');
     windows: 'Windows',
     linux: 'Linux',
   };
-  if (btn && plat && data[plat]) {
-    btn.href = data[plat].url;
+  const url: unknown = plat ? data[plat]?.url : undefined;
+  // Defence-in-depth: only ever assign an https:// URL to the button (the build
+  // step already drops non-releases-origin URLs, but never trust the JSON blob).
+  if (btn && typeof url === 'string' && /^https:\/\//i.test(url)) {
+    btn.href = url;
     btn.setAttribute('download', '');
-    btn.textContent = `Download for ${labels[plat]}`;
+    btn.textContent = `Download for ${labels[plat as string]}`;
   }
 </script>
 

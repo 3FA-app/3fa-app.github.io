@@ -1,17 +1,20 @@
 # HTTP response headers for static hosts that honour a `_headers` file
-# (Cloudflare Pages, Netlify). The Content-Security-Policy itself is emitted
-# per-page as a <meta> tag by Astro's CSP feature (with per-script hashes);
-# these are the complementary transport/UA hardening headers.
+# (Cloudflare Pages, Netlify). The full Content-Security-Policy (with per-script
+# hashes) is emitted per-page as a <meta> tag by Astro's CSP feature — but a
+# <meta> CSP MUST ignore `frame-ancestors`, so we ALSO send it as a real header
+# here. This header carries ONLY `frame-ancestors` so it can't conflict with the
+# meta policy's script/style hashing; the rest is the meta CSP + the transport/UA
+# hardening headers below.
 
 /*
+  Content-Security-Policy: frame-ancestors 'none'
   Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
   X-Content-Type-Options: nosniff
   X-Frame-Options: DENY
   Referrer-Policy: no-referrer
   Cross-Origin-Opener-Policy: same-origin
   Cross-Origin-Resource-Policy: same-origin
-  Cross-Origin-Embedder-Policy: require-corp
-  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=(), interest-cohort=()
+  Permissions-Policy: accelerometer=(), browsing-topics=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()
   X-Permitted-Cross-Domain-Policies: none
 
 # Long-cache immutable build assets.
