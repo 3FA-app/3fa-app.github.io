@@ -13,6 +13,9 @@ const available = order.filter((p) => release.assets[p]);
 // Escape `<` so embedded JSON can never break out of the <script> element
 // (defence-in-depth even though the data is our own trusted manifest).
 const releaseJson = JSON.stringify(release.assets).replace(/</g, '\\u003c');
+
+// Configured base without its trailing slash, for prefixing internal links.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <div class="downloads">
