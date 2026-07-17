@@ -13,11 +13,14 @@ const available = order.filter((p) => release.assets[p]);
 // Escape `<` so embedded JSON can never break out of the <script> element
 // (defence-in-depth even though the data is our own trusted manifest).
 const releaseJson = JSON.stringify(release.assets).replace(/</g, '\\u003c');
+
+// Configured base without its trailing slash, for prefixing internal links.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <div class="downloads">
   <!-- Primary button: auto-detects the visitor's OS client-side. -->
-  <a id="primary-download" class="btn primary" href="/download" data-detected="">
+  <a id="primary-download" class="btn primary" href={`${base}/download`} data-detected="">
     Download for your platform
   </a>
 

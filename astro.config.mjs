@@ -9,6 +9,9 @@ const RELEASES_URL =
 
 export default defineConfig({
   site: process.env.SITE_URL || 'https://threefa.app',
+  // Non-root base for project-style GitHub Pages hosting
+  // (https://3fa-app.github.io/3fa-website). Root '/' everywhere else.
+  base: process.env.BASE_PATH || '/',
   output: 'static',
   integrations: [sitemap()],
 

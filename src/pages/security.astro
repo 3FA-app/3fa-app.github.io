@@ -1,5 +1,8 @@
 ---
 import Base from '../layouts/Base.astro';
+
+// Configured base without its trailing slash, for prefixing internal links.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <Base
@@ -39,7 +42,7 @@ import Base from '../layouts/Base.astro';
     Email <a href="mailto:security@threefa.app">security@threefa.app</a>. Please
     include reproduction steps and avoid accessing other users' data. We aim to
     acknowledge reports within 72 hours. See our machine-readable policy at
-    <a href="/.well-known/security.txt"><code>/.well-known/security.txt</code></a>.
+    <a href={`${base}/.well-known/security.txt`}><code>/.well-known/security.txt</code></a>.
   </p>
 
   <style>
