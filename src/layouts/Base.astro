@@ -6,6 +6,9 @@ const {
 
 // Canonical URL resolved against the configured `site`.
 const canonical = new URL(Astro.url.pathname, Astro.site ?? 'https://threefa.app').href;
+
+// Configured base without its trailing slash, for prefixing internal links.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 ---
 
 <!doctype html>
