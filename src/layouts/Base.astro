@@ -35,10 +35,10 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   </head>
   <body>
     <header>
-      <a href="/" class="brand">3FA</a>
+      <a href={base || '/'} class="brand">3FA</a>
       <nav>
-        <a href="/security">Security</a>
-        <a href="/download">Download</a>
+        <a href={`${base}/security`}>Security</a>
+        <a href={`${base}/download`}>Download</a>
       </nav>
     </header>
     <main>
