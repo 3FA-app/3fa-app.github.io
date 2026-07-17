@@ -19,10 +19,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     env:
-      # Project-style Pages URL. When the site moves to a custom domain
-      # (e.g. https://threefa.app), set SITE_URL to it and BASE_PATH to /.
+      # Org-root Pages site (repo is named 3fa-app.github.io). When the site
+      # moves to a custom domain (e.g. https://threefa.app), just change SITE_URL.
       SITE_URL: https://3fa-app.github.io
-      BASE_PATH: /3fa-website
+      BASE_PATH: /
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
