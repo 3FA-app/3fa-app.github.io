@@ -26,7 +26,9 @@ export default defineConfig({
         "default-src 'self'",
         "base-uri 'self'",
         "form-action 'self'",
-        "frame-ancestors 'none'",
+        // NOTE: `frame-ancestors` is deliberately NOT set here — browsers MUST
+        // ignore it in a <meta> CSP (and log a console error). It is delivered
+        // as a real header via public/_headers on hosts that honour it.
         "object-src 'none'",
         "img-src 'self' data:",
         `connect-src 'self' ${RELEASES_URL}`,

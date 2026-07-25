@@ -1,0 +1,64 @@
+name: deploy
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Org-root Pages site (repo is named 3fa-app.github.io). When the site
+      # moves to a custom domain (e.g. https://threefa.app), just change SITE_URL.
+      SITE_URL: https://3fa-app.github.io
+      BASE_PATH: /
+    steps:
+      - uses: actions/checkout@v4
+      - uses: withastro/action@e84f40bd8d2caa9e768ec82ad30dd81f0b280853 # v6
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
+  test:
+    runs-on: ubuntu-latest
+    env:
+      SITE_URL: https://3fa-app.github.io
+      BASE_PATH: /
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run build
+      - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npx puppeteer browsers install chrome
+      - run: npm run test:e2e
+      - run: npm run test:puppeteer
+  e2e-live:
+    needs: deploy
+    runs-on: ubuntu-latest
+    env:
+      E2E_BASE_URL: https://3fa-app.github.io
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx puppeteer browsers install chrome
+      - run: npm run test:e2e
+      - run: npm run test:puppeteer
