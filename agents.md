@@ -14,7 +14,10 @@ Before starting work:
 2. Run `git fetch --all --prune` (or the equivalent safe fetch for the environment).
 3. Create the feature branch from the latest remote default branch, not a stale local branch.
 
-While working and again before pushing, fetch the remote and incorporate upstream changes. Prefer a normal rebase or merge according to repository policy. Do not force-push, discard remote commits, or rewrite shared history unless the task explicitly requires it and the consequences are understood. Push the feature branch and open a pull request; do not bypass required review or CI.
+While working and again before pushing, fetch the remote and incorporate upstream changes with `git merge` or `git pull` on a clean working tree.
+
+- avoid git rebase in favor of git merge.
+- Do not force-push, discard remote commits, rewrite shared history, or bypass required review or CI.
 
 ## Resolve Git conflicts semantically
 
