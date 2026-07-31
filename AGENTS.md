@@ -40,3 +40,12 @@ A conflict is not resolved merely because Git accepts the file; it is resolved o
 ## Change discipline
 
 Keep changes scoped to the task, preserve existing repository conventions, add or update tests when behavior changes, and describe validation and any remaining risk in the pull request.
+## Repository-specific rules
+
+- **This repository is the source of truth.** The copy vendored into
+  `ORESoftware/k8s-cluster` (under `remote/deployments/`) is a *secondary* submodule
+  checkout — after merging here, bump the submodule pointer there. Do not edit the
+  vendored copy directly.
+- Path dependencies (`../../libs`, `../../submodules`) resolve only when this repo is
+  checked out at its `remote/deployments/` path inside the `k8s-cluster` superproject.
+  Full builds happen there; standalone CI is limited to hygiene and format checks by design.
