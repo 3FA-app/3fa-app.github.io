@@ -8,6 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "test": "node --test \"tests/*.test.mjs\"",
+    "test:dist": "node --test tests/dist.test.mjs",
+    "test:releases-origin": "node --test tests/releases-origin.test.mjs",
     "test:e2e": "playwright test",
     "test:puppeteer": "node --test \"tests/puppeteer/*.test.mjs\""
   },
