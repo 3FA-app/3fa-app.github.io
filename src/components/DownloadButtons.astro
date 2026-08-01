@@ -3,10 +3,16 @@ import {
   getLatestRelease,
   PLATFORM_LABELS,
   humanSize,
+  releasesOrigin,
   type Platform,
 } from '../lib/releases';
 
 const release = await getLatestRelease();
+
+// The origin the client script is allowed to point the download button at.
+// Rendered as an attribute (not inside the JSON blob) so that tampering with
+// the manifest body cannot also widen the allow-list.
+const allowedOrigin = releasesOrigin();
 const order: Platform[] = ['macos', 'windows', 'linux'];
 const available = order.filter((p) => release.assets[p]);
 
