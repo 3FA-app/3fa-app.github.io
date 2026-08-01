@@ -3,10 +3,16 @@ import {
   getLatestRelease,
   PLATFORM_LABELS,
   humanSize,
+  releasesOrigin,
   type Platform,
 } from '../lib/releases';
 
 const release = await getLatestRelease();
+
+// The origin the client script is allowed to point the download button at.
+// Rendered as an attribute (not inside the JSON blob) so that tampering with
+// the manifest body cannot also widen the allow-list.
+const allowedOrigin = releasesOrigin();
 const order: Platform[] = ['macos', 'windows', 'linux'];
 const available = order.filter((p) => release.assets[p]);
 
@@ -44,12 +50,17 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   </p>
 </div>
 
-<script type="application/json" id="release-data" set:html={releaseJson} />
+<script
+  type="application/json"
+  id="release-data"
+  data-releases-origin={allowedOrigin}
+  set:html={releaseJson}
+/>
 <script>
   // Detect the OS and point the primary button at the right asset.
-  const data = JSON.parse(
-    document.getElementById('release-data')?.textContent || '{}'
-  );
+  const dataEl = document.getElementById('release-data');
+  const data = JSON.parse(dataEl?.textContent || '{}');
+  const allowedOrigin = dataEl?.getAttribute('data-releases-origin') || '';
   const ua = navigator.userAgent;
   let plat: 'macos' | 'windows' | 'linux' | null = null;
   if (/Mac/i.test(ua)) plat = 'macos';
@@ -63,9 +74,25 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
     linux: 'Linux',
   };
   const url: unknown = plat ? data[plat]?.url : undefined;
-  // Defence-in-depth: only ever assign an https:// URL to the button (the build
-  // step already drops non-releases-origin URLs, but never trust the JSON blob).
-  if (btn && typeof url === 'string' && /^https:\/\//i.test(url)) {
+
+  // Defence-in-depth: only ever assign an https:// URL on the pinned releases
+  // origin (the build step already drops non-releases-origin URLs via
+  // isAllowedDownloadUrl, but never trust the JSON blob). Checking the scheme
+  // alone is not enough — an `https://evil.example/x.zip` in a tampered
+  // manifest would pass a scheme-only test, so the origin is pinned too, and
+  // resolution is done with the URL parser rather than a regex so that
+  // protocol-relative (`//evil.example/x.zip`) forms cannot slip through.
+  let safe = false;
+  if (typeof url === 'string' && allowedOrigin) {
+    try {
+      const parsed = new URL(url, document.baseURI);
+      safe = parsed.protocol === 'https:' && parsed.origin === allowedOrigin;
+    } catch {
+      safe = false;
+    }
+  }
+
+  if (btn && safe && typeof url === 'string') {
     btn.href = url;
     btn.setAttribute('download', '');
     btn.textContent = `Download for ${labels[plat as string]}`;
