@@ -105,9 +105,10 @@ test.describe('primary download button', () => {
     ['a protocol-relative URL', '//evil.example.com/releases/evil.zip'],
   ]) {
     test(`ignores ${label} in a tampered manifest`, async ({ page }) => {
-      await withReleaseManifest(page, assetsPointingAt(hostile));
+      const state = await withReleaseManifest(page, assetsPointingAt(hostile));
       await page.goto('/', { waitUntil: 'load' });
       await page.waitForTimeout(250);
+      expect(state.substituted, 'release-data block not found — the fixture needs updating').toBe(true);
 
       const resolved = await page.locator('#primary-download').evaluate((el) => el.href);
       expect(resolved, `the button adopted a hostile URL: ${resolved}`).not.toContain('evil.example.com');
