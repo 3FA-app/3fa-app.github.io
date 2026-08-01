@@ -24,9 +24,9 @@ export default defineConfig({
   timeout: 30_000,
   expect: { timeout: 5_000 },
 
-  reporter: isCI
-    ? [['list'], ['html', { open: 'never' }]]
-    : [['list'], ['html', { open: 'never' }]],
+  // `list` for readable CI logs; the HTML report is what gets uploaded as a
+  // build artifact when a run fails.
+  reporter: [['list'], ['html', { open: 'never' }]],
 
   use: {
     baseURL,
