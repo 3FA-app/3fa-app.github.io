@@ -88,9 +88,10 @@ test.describe('primary download button', () => {
   // stops the hostile-manifest test from passing for the wrong reason.
   test('follows a legitimate manifest to the pinned releases origin', async ({ page }) => {
     const good = `${RELEASES_ORIGIN}/releases/3fa-9.9.9-fixture.zip`;
-    await withReleaseManifest(page, assetsPointingAt(good));
+    const state = await withReleaseManifest(page, assetsPointingAt(good));
     await page.goto('/', { waitUntil: 'load' });
     await page.waitForTimeout(250);
+    expect(state.substituted, 'release-data block not found — the fixture needs updating').toBe(true);
 
     const btn = page.locator('#primary-download');
     await expect(btn).toHaveAttribute('href', good);
