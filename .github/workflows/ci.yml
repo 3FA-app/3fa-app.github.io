@@ -76,8 +76,10 @@ jobs:
 
       - run: npm ci
 
-      # playwright.config.mjs starts `npm run preview` on 127.0.0.1:4321 unless
-      # E2E_BASE_URL is set, so the suite needs dist/ present and E2E_BASE_URL
+      # playwright.config.mjs starts `npm run preview` on 127.0.0.1:4329 (not
+      # Astro's default 4321, and with server reuse off, so a busy port fails
+      # loudly instead of testing an unrelated server) unless E2E_BASE_URL is
+      # set, so the suite needs dist/ present and E2E_BASE_URL
       # deliberately unset: this job tests the commit under review, not
       # production. (deploy.yml's `e2e-live` job covers the deployed site.)
       - run: npm run build
