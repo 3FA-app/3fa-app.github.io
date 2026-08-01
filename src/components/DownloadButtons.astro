@@ -50,12 +50,17 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
   </p>
 </div>
 
-<script type="application/json" id="release-data" set:html={releaseJson} />
+<script
+  type="application/json"
+  id="release-data"
+  data-releases-origin={allowedOrigin}
+  set:html={releaseJson}
+/>
 <script>
   // Detect the OS and point the primary button at the right asset.
-  const data = JSON.parse(
-    document.getElementById('release-data')?.textContent || '{}'
-  );
+  const dataEl = document.getElementById('release-data');
+  const data = JSON.parse(dataEl?.textContent || '{}');
+  const allowedOrigin = dataEl?.getAttribute('data-releases-origin') || '';
   const ua = navigator.userAgent;
   let plat: 'macos' | 'windows' | 'linux' | null = null;
   if (/Mac/i.test(ua)) plat = 'macos';
