@@ -66,12 +66,16 @@ test.describe('primary download button', () => {
     const resolved = await page.locator('#primary-download').evaluate((el) => el.href);
 
     expect(resolved).not.toMatch(/^javascript:/i);
-    expect(resolved.startsWith('http://')).toBe(false);
 
     const url = new URL(resolved);
-    // Either it stayed on the internal /download page, or the script pointed it
-    // at a real asset — and an asset may only ever live on the releases origin.
     const internal = url.origin === new URL(page.url()).origin;
+
+    // Either it stayed on the internal /download page (which is plain http only
+    // because the local preview server is), or the script pointed it at a real
+    // asset — and an asset may only ever be https on the releases origin.
+    if (!internal) {
+      expect(url.protocol, `off-origin download URL must be https: ${resolved}`).toBe('https:');
+    }
     expect(
       internal || url.host === RELEASES_HOST,
       `primary download button resolved to ${resolved}, which is neither the ` +
