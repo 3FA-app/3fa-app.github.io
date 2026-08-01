@@ -21,17 +21,27 @@ const RELEASES_HOST = new URL(RELEASES_ORIGIN).host;
  * and it still executes.
  */
 async function withReleaseManifest(page, assets) {
+  // Matches the block regardless of its other attributes (it carries
+  // data-releases-origin, which must be left untouched — tampering with the
+  // manifest body must not be able to widen the allow-list).
+  const BLOCK = /(<script\b[^>]*\bid="release-data"[^>]*>)([\s\S]*?)(<\/script>)/;
+  const state = { substituted: false };
+
   await page.route('**/*', async (route, request) => {
     if (request.resourceType() !== 'document') return route.fallback();
     const response = await route.fetch();
     const original = await response.text();
+    // Never assert inside a route handler: throwing here aborts the navigation
+    // and reports as a confusing ERR_ABORTED instead of the real cause.
+    if (BLOCK.test(original)) state.substituted = true;
     const body = original.replace(
-      /(<script type="application\/json" id="release-data">)([\s\S]*?)(<\/script>)/,
+      BLOCK,
       (_match, open, _old, close) => open + JSON.stringify(assets) + close,
     );
-    expect(body, 'release-data block not found — the fixture needs updating').not.toBe(original);
     await route.fulfill({ response, body });
   });
+
+  return state;
 }
 
 /** An asset triple pointing every platform at the same URL, so the test works
