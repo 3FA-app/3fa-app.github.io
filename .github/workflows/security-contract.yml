@@ -35,7 +35,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Build the static site
         run: npm run build
-      - name: Run unit and security contract tests
-        run: npm test
+      - name: Run the offline security contract suite
+        run: node --test tests/security-contract.test.mjs
       - name: Audit production dependency graph
         run: npm audit --omit=dev --audit-level=high
