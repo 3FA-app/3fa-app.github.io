@@ -39,3 +39,36 @@ jobs:
         run: node --test tests/security-contract.test.mjs tests/dependency-contract.test.mjs
       - name: Enforce the production dependency audit
         run: npm run audit:prod
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SITE_URL: https://3fa-app.github.io
+      BASE_PATH: /
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Install the shared Chromium runtime
+        run: npx playwright install --with-deps chromium
+      - name: Resolve the shared Chromium executable
+        id: chromium
+        shell: bash
+        run: |
+          path="$(node --input-type=module -e "import { chromium } from '@playwright/test'; console.log(chromium.executablePath())")"
+          test -x "$path"
+          echo "path=$path" >> "$GITHUB_OUTPUT"
+      - name: Build the static site
+        run: npm run build
+      - name: Run Playwright contracts
+        run: npm run test:e2e
+      - name: Run Puppeteer contracts against the shared browser
+        env:
+          CHROMIUM_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
+        run: npm run test:puppeteer
