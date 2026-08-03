@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "audit:prod": "npm audit --omit=dev --audit-level=high",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
@@ -13,7 +14,7 @@
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
-    "astro": "^6.4.6"
+    "astro": "^7.1.6"
   },
   "devDependencies": {
     "@playwright/test": "^1.60.0",

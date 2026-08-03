@@ -45,3 +45,18 @@ test('no console errors during load', async ({ page }) => {
   await page.goto('/', { waitUntil: 'load' });
   expect(errors).toEqual([]);
 });
+
+test('404 response keeps Astro 7 styling inside the hashed CSP', async ({ page }) => {
+  const response = await page.goto('/missing-astro-7-contract');
+  expect(response).not.toBeNull();
+  expect(response.status()).toBe(404);
+
+  await expect(page.locator('h1')).toHaveText('404');
+  await expect(page.locator('[style]')).toHaveCount(0);
+
+  const policy = await page
+    .locator('meta[http-equiv="content-security-policy"]')
+    .getAttribute('content');
+  expect(policy).toContain("default-src 'self'");
+  expect(policy).not.toContain("'unsafe-inline'");
+});
