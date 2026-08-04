@@ -63,6 +63,7 @@ test('Astro CSP configuration stays static and avoids unsafe script/style direct
   const config = await read('astro.config.mjs');
 
   assert.match(config, /output:\s*'static'/u);
+  assert.match(config, /syntaxHighlight:\s*'prism'/u);
   assert.match(config, /"default-src 'self'"/u);
   assert.match(config, /"base-uri 'self'"/u);
   assert.match(config, /"form-action 'self'"/u);
