@@ -1,0 +1,131 @@
+# Pull-request CI.
+#
+# `deploy.yml` already builds and tests, but it only triggers on push to main —
+# i.e. after a merge. Nothing gated a pull request, and because its `test` job
+# runs `npm test` before the browser steps, the two failing release-origin
+# assertions short-circuit the job and the Playwright suite there has never
+# actually executed on a locally built site.
+#
+# This workflow runs on pull_request as well as push, and splits the suites so a
+# known-broken check cannot mask the rest.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A new push obsoletes the previous run on the same ref.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: build + node tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22.22.1"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      # tests/dist.test.mjs. The other half of `npm test`,
+      # tests/releases-origin.test.mjs, runs in the `release-origin` job below;
+      # between the two jobs every test `npm test` runs is executed exactly once.
+      - name: Node test suite (built output)
+        run: npm run test:dist
+
+  e2e:
+    name: playwright (chromium, local preview)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22.22.1"
+          cache: npm
+
+      - run: npm ci
+
+      # playwright.config.mjs starts `npm run preview` on 127.0.0.1:4321 unless
+      # E2E_BASE_URL is set, so the suite needs dist/ present and E2E_BASE_URL
+      # deliberately unset: this job tests the commit under review, not
+      # production. (deploy.yml's `e2e-live` job covers the deployed site.)
+      - run: npm run build
+
+      - name: Resolve Playwright version
+        id: playwright
+        run: |
+          echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-chromium-${{ steps.playwright.outputs.version }}
+
+      # Chromium only — it is the sole project in playwright.config.mjs.
+      - run: npx playwright install --with-deps chromium
+
+      - run: npm run test:e2e
+
+      - name: Upload Playwright report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # EXPECTED RED. tests/releases-origin.test.mjs asserts that the release origin
+  # baked into dist/ resolves in DNS and that the build embedded a non-empty
+  # asset map. Both fail today: downloads.threefa.app is NXDOMAIN and deploy.yml
+  # never sets PUBLIC_RELEASES_URL, so every published build ships the dead
+  # astro.config.mjs default and the download buttons cannot work.
+  #
+  # This is a real product defect (3fa-docs security audit 2026-07, findings
+  # 24/25), not a flaky test. It is isolated into its own job so it cannot
+  # short-circuit the suites above, and it is deliberately NOT marked
+  # continue-on-error: this check stays red, and the checks list names exactly
+  # why, until PUBLIC_RELEASES_URL points at an origin that resolves.
+  release-origin:
+    name: "release origin (known red: downloads.threefa.app is NXDOMAIN)"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: "22.22.1"
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Release origin resolves and manifest is non-empty
+        run: npm run test:releases-origin
