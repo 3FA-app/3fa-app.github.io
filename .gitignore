@@ -8,3 +8,7 @@ playwright-report
 .env
 .env.*
 !.env.example
+tmp
+temp
+tmp/worktrees
+temp/worktrees
