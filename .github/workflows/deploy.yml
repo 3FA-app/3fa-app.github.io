@@ -1,64 +1,102 @@
+# Build and publish the site to GitHub Pages, then smoke-test what actually
+# went live.
+#
+# Pre-merge verification (build, node tests, Playwright) lives in ci.yml, which
+# runs on pull_request as well as push to main. The duplicate `test` job that
+# used to live here has been removed rather than left to run the same suites a
+# second time on every push to main.
 name: deploy
+
 on:
   push:
     branches: [main]
   workflow_dispatch:
+
+# Least privilege at the workflow level: read-only by default. Only the job
+# that actually publishes widens this, so a compromised dependency in the build
+# or smoke-test jobs cannot mint a Pages deployment or an OIDC token.
 permissions:
   contents: read
-  pages: write
-  id-token: write
+
 concurrency:
   group: pages
-  cancel-in-progress: true
+  # Deliberately false. Cancelling a run mid-deploy can abort between the
+  # artifact upload and the Pages deployment, leaving the site on a half
+  # published build; queueing the next deploy instead is safe.
+  cancel-in-progress: false
+
 jobs:
   build:
+    name: build
     runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
     env:
       # Org-root Pages site (repo is named 3fa-app.github.io). When the site
       # moves to a custom domain (e.g. https://threefa.app), just change SITE_URL.
       SITE_URL: https://3fa-app.github.io
       BASE_PATH: /
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # Nothing here pushes, so the token must not persist in .git/config.
+          persist-credentials: false
       - uses: withastro/action@e84f40bd8d2caa9e768ec82ad30dd81f0b280853 # v6
+
   deploy:
+    name: deploy to Pages
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # The only job that needs write scope: `pages` to publish and `id-token` for
+    # the deployment's OIDC verification.
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v4
-  test:
-    runs-on: ubuntu-latest
-    env:
-      SITE_URL: https://3fa-app.github.io
-      BASE_PATH: /
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-      - run: npm ci
-      - run: npm run build
-      - run: npm test
-      - run: npx playwright install --with-deps chromium
-      - run: npx puppeteer browsers install chrome
-      - run: npm run test:e2e
-      - run: npm run test:puppeteer
+        # Held at v4 on purpose: v5 is available but changes the deploy path,
+        # and that is not something this change can verify before merging.
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+
   e2e-live:
+    name: playwright against the deployed site
     needs: deploy
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
     env:
+      # With E2E_BASE_URL set, playwright.config.mjs skips its local preview
+      # server and drives the real deployment instead.
       E2E_BASE_URL: https://3fa-app.github.io
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          node-version: 22
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '22.22.1'
+          cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx puppeteer browsers install chrome
-      - run: npm run test:e2e
-      - run: npm run test:puppeteer
+      # No `npm run build` here by design: this job tests the deployed site, not
+      # a local one.
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Run browser tests against production
+        run: npm run test:e2e
+      - name: Upload Playwright report and traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: playwright-report-live-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore

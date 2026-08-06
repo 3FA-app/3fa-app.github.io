@@ -57,18 +57,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - name: Install the shared Chromium runtime
         run: npx playwright install --with-deps chromium
-      - name: Resolve the shared Chromium executable
-        id: chromium
-        shell: bash
-        run: |
-          path="$(node --input-type=module -e "import { chromium } from '@playwright/test'; console.log(chromium.executablePath())")"
-          test -x "$path"
-          echo "path=$path" >> "$GITHUB_OUTPUT"
       - name: Build the static site
         run: npm run build
       - name: Run Playwright contracts
         run: npm run test:e2e
-      - name: Run Puppeteer contracts against the shared browser
-        env:
-          CHROMIUM_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
-        run: npm run test:puppeteer

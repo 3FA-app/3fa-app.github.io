@@ -21,8 +21,19 @@ export interface ReleaseManifest {
   assets: Partial<Record<Platform, PlatformAsset>>;
 }
 
-const RELEASES_BASE =
+export const RELEASES_BASE =
   import.meta.env.PUBLIC_RELEASES_URL ?? 'https://downloads.threefa.app';
+
+/** The pinned releases origin (scheme + host), or '' if RELEASES_BASE is not a
+ *  parseable URL. Exported so the client-side OS-detect script can enforce the
+ *  same origin pin that `isAllowedDownloadUrl` enforces at build time. */
+export function releasesOrigin(): string {
+  try {
+    return new URL(RELEASES_BASE).origin;
+  } catch {
+    return '';
+  }
+}
 
 /** True only for an absolute https:// URL on the pinned releases origin. Guards
  *  against a tampered manifest pointing a download (or the auto-detect button's

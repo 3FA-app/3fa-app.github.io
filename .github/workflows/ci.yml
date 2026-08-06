@@ -24,11 +24,20 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# deploy.yml builds with these, and they are baked into the output (canonical
+# URLs, and the prefix on every internal link). Building CI without them would
+# test a site that differs from the one that actually ships.
+env:
+  SITE_URL: https://3fa-app.github.io
+  BASE_PATH: /
+
 jobs:
   build-and-test:
     name: build + node tests
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -53,6 +62,8 @@ jobs:
     name: playwright (chromium, local preview)
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -65,8 +76,10 @@ jobs:
 
       - run: npm ci
 
-      # playwright.config.mjs starts `npm run preview` on 127.0.0.1:4321 unless
-      # E2E_BASE_URL is set, so the suite needs dist/ present and E2E_BASE_URL
+      # playwright.config.mjs starts `npm run preview` on 127.0.0.1:4329 (not
+      # Astro's default 4321, and with server reuse off, so a busy port fails
+      # loudly instead of testing an unrelated server) unless E2E_BASE_URL is
+      # set, so the suite needs dist/ present and E2E_BASE_URL
       # deliberately unset: this job tests the commit under review, not
       # production. (deploy.yml's `e2e-live` job covers the deployed site.)
       - run: npm run build
@@ -113,6 +126,8 @@ jobs:
     name: "release origin (known red: downloads.threefa.app is NXDOMAIN)"
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
