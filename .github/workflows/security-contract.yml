@@ -17,20 +17,20 @@ concurrency:
 
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     env:
       SITE_URL: https://3fa-app.github.io
       BASE_PATH: /
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - name: Validate all workflows
         uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: "22.22.1"
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Build the static site
@@ -41,18 +41,18 @@ jobs:
         run: npm run audit:prod
 
   browser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     env:
       SITE_URL: https://3fa-app.github.io
       BASE_PATH: /
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
-          node-version: "22"
+          node-version: "22.22.1"
           cache: npm
       - run: npm ci --ignore-scripts
       - name: Install the shared Chromium runtime
@@ -61,14 +61,25 @@ jobs:
         id: chromium
         shell: bash
         run: |
+          set -euo pipefail
           path="$(node --input-type=module -e "import { chromium } from '@playwright/test'; console.log(chromium.executablePath())")"
           test -x "$path"
           echo "path=$path" >> "$GITHUB_OUTPUT"
       - name: Build the static site
         run: npm run build
-      - name: Run Playwright contracts
+      - name: Run full-site Playwright contracts
         run: npm run test:e2e
-      - name: Run Puppeteer contracts against the shared browser
+      - name: Run Puppeteer smoke contracts against the shared browser
         env:
           CHROMIUM_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
         run: npm run test:puppeteer
+      - name: Upload browser report and traces
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: browser-report-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+          if-no-files-found: ignore
