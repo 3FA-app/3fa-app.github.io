@@ -55,7 +55,12 @@ export default defineConfig({
     ? {}
     : {
         webServer: {
-          command: `npm run preview -- --host 127.0.0.1 --port ${PORT}`,
+          // Astro 7 automatically backgrounds preview servers when it detects
+          // an AI-agent environment. Playwright must own a foreground child so
+          // it can observe startup failures and terminate the exact server at
+          // the end of the run. Astro treats a non-empty marker as an explicit
+          // request to skip that auto-detection path.
+          command: `ASTRO_PREVIEW_BACKGROUND=1 npm run preview -- --host 127.0.0.1 --port ${PORT}`,
           url: baseURL,
           // Deliberately false: see the note on PORT above. If the port is busy
           // the run fails loudly instead of testing an unrelated server.
