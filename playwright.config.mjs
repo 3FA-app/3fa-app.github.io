@@ -37,13 +37,30 @@ export default defineConfig({
     video: 'retain-on-failure',
   },
 
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // Three engines, not one. Every assertion in tests/e2e was previously proved
+  // on Blink only, which says nothing about the two rendering/JS engines a
+  // large share of visitors actually use — and WebKit is the engine behind
+  // every browser on iOS. Playwright labels each project in CI output, so a
+  // single-engine regression remains attributable at a glance.
+  //
+  // Locally, `npx playwright test --project=firefox` runs one engine; a bare
+  // `npm run test:e2e` runs all three against a single shared preview server.
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
 
   ...(externalBaseURL
     ? {}
     : {
         webServer: {
-          command: `npm run preview -- --host 127.0.0.1 --port ${PORT}`,
+          // Astro 7 automatically backgrounds preview servers when it detects
+          // an AI-agent environment. Playwright must own a foreground child so
+          // it can observe startup failures and terminate the exact server at
+          // the end of the run. Astro treats a non-empty marker as an explicit
+          // request to skip that auto-detection path.
+          command: `ASTRO_PREVIEW_BACKGROUND=1 npm run preview -- --host 127.0.0.1 --port ${PORT}`,
           url: baseURL,
           // Deliberately false: see the note on PORT above. If the port is busy
           // the run fails loudly instead of testing an unrelated server.
