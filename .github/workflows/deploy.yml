@@ -67,8 +67,8 @@ jobs:
           node-version: "22.22.1"
           cache: npm
       - run: npm ci --ignore-scripts
-      - name: Install the shared Chromium runtime
-        run: npx playwright install --with-deps chromium
+      - name: Install all Playwright engines and shared Chromium runtime
+        run: npx playwright install --with-deps chromium firefox webkit
       - name: Resolve the shared Chromium executable
         id: chromium
         shell: bash
