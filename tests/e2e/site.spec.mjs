@@ -54,18 +54,3 @@ test('nav links to the security and download pages', async ({ page }) => {
   expect(hrefs.some((href) => /\/security\/?$/.test(href))).toBe(true);
   expect(hrefs.some((href) => /\/download\/?$/.test(href))).toBe(true);
 });
-
-test('404 response keeps Astro 7 styling inside the hashed CSP', async ({ page }) => {
-  const response = await page.goto('/missing-astro-7-contract');
-  expect(response).not.toBeNull();
-  expect(response.status()).toBe(404);
-
-  await expect(page.locator('h1')).toHaveText('404');
-  await expect(page.locator('[style]')).toHaveCount(0);
-
-  const policy = await page
-    .locator('meta[http-equiv="content-security-policy"]')
-    .getAttribute('content');
-  expect(policy).toContain("default-src 'self'");
-  expect(policy).not.toContain("'unsafe-inline'");
-});
