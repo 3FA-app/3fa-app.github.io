@@ -40,8 +40,8 @@ export default defineConfig({
   // Three engines, not one. Every assertion in tests/e2e was previously proved
   // on Blink only, which says nothing about the two rendering/JS engines a
   // large share of visitors actually use — and WebKit is the engine behind
-  // every browser on iOS. CI runs one job per engine (see .github/workflows/
-  // ci.yml) so a single-engine regression is attributable at a glance.
+  // every browser on iOS. Playwright labels each project in CI output, so a
+  // single-engine regression remains attributable at a glance.
   //
   // Locally, `npx playwright test --project=firefox` runs one engine; a bare
   // `npm run test:e2e` runs all three against a single shared preview server.

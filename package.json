@@ -14,7 +14,8 @@
     "test:e2e": "playwright test",
     "lint:ores": "if [ -f .ores-lint/lint.sh ]; then sh .ores-lint/lint.sh; else echo 'ores-lint not installed'; fi",
     "prepublishOnly": "npm run lint:ores",
-    "prebuild": "npm run lint:ores"
+    "prebuild": "npm run lint:ores",
+    "test:puppeteer": "node --test \"tests/puppeteer/*.test.mjs\""
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.3",
@@ -22,7 +23,8 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.12.1",
-    "@playwright/test": "^1.60.0"
+    "@playwright/test": "^1.60.0",
+    "puppeteer": "^24.0.0"
   },
   "oresLint": {
     "note": "Declared, not installed. ores-lint resolves these from a global install - see .ores-lint/README.md",

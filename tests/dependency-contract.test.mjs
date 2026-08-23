@@ -58,8 +58,10 @@ test('dependency sources and lifecycle scripts remain reviewable', async () => {
   }
 
   assert.deepEqual(lifecyclePackages.sort(), [
-    'node_modules/esbuild',
+    'node_modules/astro/node_modules/esbuild',
     'node_modules/fsevents',
+    'node_modules/playwright/node_modules/fsevents',
+    'node_modules/puppeteer',
   ]);
 });
 
