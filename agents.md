@@ -40,6 +40,7 @@ A conflict is not resolved merely because Git accepts the file; it is resolved o
 ## Change discipline
 
 Keep changes scoped to the task, preserve existing repository conventions, add or update tests when behavior changes, and describe validation and any remaining risk in the pull request.
+
 ## Repository-specific rules
 
 - **This repository is the source of truth.** The copy vendored into
