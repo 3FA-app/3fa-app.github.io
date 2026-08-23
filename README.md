@@ -2,6 +2,8 @@
 
 Astro static marketing site with per-OS download buttons.
 
+The build requires Node.js 22.12 or newer (the Astro 7 runtime floor).
+
 ```bash
 npm install
 npm run dev      # local dev
@@ -42,6 +44,10 @@ Releases (the zips this site links to) are produced and uploaded from the
 - **Disclosure:** [`/.well-known/security.txt`](public/.well-known/security.txt) (RFC 9116)
   + a human [`/security`](src/pages/security.astro) policy page.
 - **No third-party scripts**, no analytics, no external fonts — nothing to exfiltrate to.
-- Dependencies audited: `npm audit` → 0 vulnerabilities (Astro 6).
+- **Audited Astro runtime:** Astro 7 with the compatible sitemap integration;
+  the production dependency graph has no known vulnerabilities.
+- **No inline style attributes:** component styles are compiled into hashed style
+  blocks covered by the generated CSP. Prism is configured for future Markdown
+  code blocks because Astro 7's default Shiki output uses CSP-hostile inline styles.
 
-Re-run the audit any time with `npm audit`.
+Re-run the enforced production audit with `npm run audit:prod`.

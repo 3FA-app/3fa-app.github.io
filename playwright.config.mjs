@@ -1,20 +1,73 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const externalBaseURL = process.env.E2E_BASE_URL;
-const baseURL = externalBaseURL ?? 'http://127.0.0.1:4321';
+
+// NOT Astro's default 4321. The suite previously bound there with
+// `reuseExistingServer: true`, which meant that any other project's dev server
+// already listening on 4321 would be adopted and tested instead of this site —
+// the run stayed green while asserting against somebody else's HTML. A distinct
+// default port plus no server reuse keeps the run hermetic.
+const PORT = Number(process.env.E2E_PORT ?? 4329);
+const baseURL = externalBaseURL ?? `http://127.0.0.1:${PORT}`;
+
+const isCI = !!process.env.CI;
 
 export default defineConfig({
   testDir: 'tests/e2e',
-  use: { baseURL },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+
+  // Fail the build if a `.only` is committed, and tolerate genuine flake in CI
+  // only — never locally, where a retry would mask a real regression.
+  forbidOnly: isCI,
+  retries: isCI ? 2 : 0,
+
+  // A hung page must not hang the whole pipeline.
+  timeout: 30_000,
+  expect: { timeout: 5_000 },
+
+  // `list` for readable CI logs; the HTML report is what gets uploaded as a
+  // build artifact when a run fails.
+  reporter: [['list'], ['html', { open: 'never' }]],
+
+  use: {
+    baseURL,
+    // Artifacts for post-mortem debugging of a CI failure. `on-first-retry`
+    // keeps the happy path fast while still capturing anything that flakes.
+    trace: 'on-first-retry',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+  },
+
+  // Three engines, not one. Every assertion in tests/e2e was previously proved
+  // on Blink only, which says nothing about the two rendering/JS engines a
+  // large share of visitors actually use — and WebKit is the engine behind
+  // every browser on iOS. Playwright labels each project in CI output, so a
+  // single-engine regression remains attributable at a glance.
+  //
+  // Locally, `npx playwright test --project=firefox` runs one engine; a bare
+  // `npm run test:e2e` runs all three against a single shared preview server.
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+  ],
+
   ...(externalBaseURL
     ? {}
     : {
         webServer: {
-          command: 'npm run preview -- --host 127.0.0.1 --port 4321',
-          url: 'http://127.0.0.1:4321',
-          reuseExistingServer: true,
-          timeout: 120000,
+          // Astro 7 automatically backgrounds preview servers when it detects
+          // an AI-agent environment. Playwright must own a foreground child so
+          // it can observe startup failures and terminate the exact server at
+          // the end of the run. Astro treats a non-empty marker as an explicit
+          // request to skip that auto-detection path.
+          command: `ASTRO_PREVIEW_BACKGROUND=1 npm run preview -- --host 127.0.0.1 --port ${PORT}`,
+          url: baseURL,
+          // Deliberately false: see the note on PORT above. If the port is busy
+          // the run fails loudly instead of testing an unrelated server.
+          reuseExistingServer: false,
+          timeout: 120_000,
+          stdout: 'pipe',
+          stderr: 'pipe',
         },
       }),
 });

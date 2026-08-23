@@ -48,6 +48,7 @@ before(async () => {
     await waitForPort(PREVIEW_PORT, '127.0.0.1');
   }
   browser = await puppeteer.launch({
+    executablePath: process.env.CHROMIUM_EXECUTABLE_PATH,
     // GitHub ubuntu-24 runners restrict unprivileged user namespaces (AppArmor),
     // which breaks Chrome's sandbox; disable it in CI only.
     args: process.env.CI ? ['--no-sandbox', '--disable-dev-shm-usage'] : [],
@@ -82,4 +83,31 @@ test('h1 shows the hero heading', async () => {
 test('page links to the download page', async () => {
   const hrefs = await page.$$eval('a', (anchors) => anchors.map((a) => a.getAttribute('href')));
   assert.ok(hrefs.includes('/download'), 'expected a link to /download');
+});
+
+test('404 response keeps Astro 7 styling inside the hashed CSP', async () => {
+  const notFoundPage = await browser.newPage();
+
+  try {
+    const notFoundResponse = await notFoundPage.goto(
+      `${baseUrl}/missing-astro-7-contract`,
+      { waitUntil: 'load' },
+    );
+    assert.equal(notFoundResponse?.status(), 404);
+
+    const contract = await notFoundPage.evaluate(() => ({
+      heading: document.querySelector('h1')?.textContent?.trim(),
+      inlineStyleCount: document.querySelectorAll('[style]').length,
+      policy: document
+        .querySelector('meta[http-equiv="content-security-policy"]')
+        ?.getAttribute('content'),
+    }));
+
+    assert.equal(contract.heading, '404');
+    assert.equal(contract.inlineStyleCount, 0);
+    assert.match(contract.policy, /default-src 'self'/u);
+    assert.doesNotMatch(contract.policy, /'unsafe-inline'/u);
+  } finally {
+    await notFoundPage.close();
+  }
 });

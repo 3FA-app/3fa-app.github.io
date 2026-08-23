@@ -1,28 +1,24 @@
-# Build and publish the site to GitHub Pages, then smoke-test the deployed site.
-# Pull-request and local-build verification lives in security-contract.yml.
-name: deploy
+name: security-contract
 
 on:
+  pull_request:
   push:
     branches: [main]
+  schedule:
+    - cron: "41 8 * * 3"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: pages
-  # A newer deployment queues instead of cancelling between artifact creation
-  # and publication, avoiding a half-finished Pages rollout.
-  cancel-in-progress: false
+  group: security-contract-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
-    name: build
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    permissions:
-      contents: read
+    timeout-minutes: 20
     env:
       SITE_URL: https://3fa-app.github.io
       BASE_PATH: /
@@ -30,34 +26,26 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: withastro/action@e84f40bd8d2caa9e768ec82ad30dd81f0b280853 # v6
+      - name: Validate all workflows
+        uses: docker://rhysd/actionlint@sha256:b1934ee5f1c509618f2508e6eb47ee0d3520686341fec936f3b79331f9315667 # v1.7.12
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22.22.1"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build the static site
+        run: npm run build
+      - name: Run the offline security and dependency contract suites
+        run: node --test tests/security-contract.test.mjs tests/dependency-contract.test.mjs
+      - name: Enforce the production dependency audit
+        run: npm run audit:prod
 
-  deploy:
-    name: deploy to Pages
-    needs: build
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        # Deliberately held on the reviewed v4 publishing contract.
-        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
-
-  e2e-live:
-    name: browser smoke against the deployed site
-    needs: deploy
+  browser:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
-    permissions:
-      contents: read
     env:
-      E2E_BASE_URL: https://3fa-app.github.io
+      SITE_URL: https://3fa-app.github.io
+      BASE_PATH: /
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -77,17 +65,19 @@ jobs:
           path="$(node --input-type=module -e "import { chromium } from '@playwright/test'; console.log(chromium.executablePath())")"
           test -x "$path"
           echo "path=$path" >> "$GITHUB_OUTPUT"
-      - name: Run full Playwright suite against production
+      - name: Build the static site
+        run: npm run build
+      - name: Run full-site Playwright contracts
         run: npm run test:e2e
-      - name: Preserve the existing Puppeteer smoke lane
+      - name: Run Puppeteer smoke contracts against the shared browser
         env:
           CHROMIUM_EXECUTABLE_PATH: ${{ steps.chromium.outputs.path }}
         run: npm run test:puppeteer
-      - name: Upload Playwright report and traces
+      - name: Upload browser report and traces
         if: ${{ failure() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: playwright-report-live-${{ github.run_id }}-${{ github.run_attempt }}
+          name: browser-report-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             playwright-report/
             test-results/

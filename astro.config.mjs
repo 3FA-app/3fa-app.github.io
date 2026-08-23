@@ -15,6 +15,13 @@ export default defineConfig({
   output: 'static',
   integrations: [sitemap()],
 
+  // Astro 7 defaults Markdown code blocks to Shiki, which emits inline style
+  // attributes that cannot be authorized by our hash-only CSP. Use Prism now
+  // so future Markdown content inherits a CSP-compatible highlighter.
+  markdown: {
+    syntaxHighlight: 'prism',
+  },
+
   // Content-Security-Policy. Astro injects a <meta http-equiv> CSP and computes
   // SHA-256 hashes for every bundled inline <script>/<style>, so we never need
   // 'unsafe-inline'. `script-src`/`style-src` are managed by Astro; we add the
