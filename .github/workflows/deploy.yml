@@ -26,11 +26,14 @@ jobs:
     env:
       SITE_URL: https://3fa-app.github.io
       BASE_PATH: /
+      PUBLIC_RELEASES_URL: https://downloads.threefa.app
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
       - uses: withastro/action@e84f40bd8d2caa9e768ec82ad30dd81f0b280853 # v6
+      - name: Refuse to publish an unresolved or incomplete release manifest
+        run: npm run test:releases-origin
 
   deploy:
     name: deploy to Pages

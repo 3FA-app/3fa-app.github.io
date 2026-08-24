@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 const distDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'dist');
 const indexPath = path.join(distDir, 'index.html');
 const html = existsSync(indexPath) ? readFileSync(indexPath, 'utf8') : '';
+const REQUIRED_PLATFORMS = ['linux', 'macos', 'windows'];
 
 /** The configured PUBLIC_RELEASES_URL, read back out of the built page. Astro
  *  interpolates it into the meta CSP's `connect-src`, which is the only place
@@ -39,6 +40,47 @@ function releasesOriginFromBuild() {
   return origin.replace(/\/$/, '');
 }
 
+function embeddedAssets() {
+  const baked = html.match(
+    /<script\b(?=[^>]*\btype="application\/json")(?=[^>]*\bid="release-data")[^>]*>([\s\S]*?)<\/script>/,
+  )?.[1];
+  assert.ok(baked !== undefined, 'expected the embedded release-data script in dist/index.html');
+  return JSON.parse(baked);
+}
+
+function assertCompleteAssets(assets, origin, source) {
+  assert.ok(assets && typeof assets === 'object' && !Array.isArray(assets));
+  assert.deepEqual(
+    Object.keys(assets).sort(),
+    REQUIRED_PLATFORMS,
+    `${source} must contain exactly the macOS, Windows, and Linux release assets`,
+  );
+
+  for (const platform of REQUIRED_PLATFORMS) {
+    const asset = assets[platform];
+    assert.ok(
+      asset && typeof asset === 'object' && !Array.isArray(asset),
+      `${platform} asset must be an object`,
+    );
+    assert.ok(Number.isSafeInteger(asset.size) && asset.size > 0, `${platform} size must be positive`);
+    assert.match(asset.sha256, /^[0-9a-f]{64}$/u, `${platform} SHA-256 must be 64 lowercase hex characters`);
+    assert.match(
+      asset.filename,
+      /^[A-Za-z0-9][A-Za-z0-9._-]*\.zip$/u,
+      `${platform} filename must be a safe zip basename`,
+    );
+
+    const url = new URL(asset.url);
+    assert.equal(url.protocol, 'https:', `${platform} download must use HTTPS`);
+    assert.equal(url.origin, origin, `${platform} download must stay on ${origin}`);
+    assert.equal(
+      decodeURIComponent(url.pathname.split('/').at(-1)),
+      asset.filename,
+      `${platform} URL and filename must agree`,
+    );
+  }
+}
+
 test('dist/index.html exists', () => {
   assert.ok(existsSync(indexPath), `expected ${indexPath} to exist — run \`npm run build\` first`);
 });
@@ -50,35 +92,27 @@ test('the releases origin the build used resolves in DNS', async () => {
     () => dns.lookup(hostname),
     `the build fetched the release manifest from ${origin}, but ${hostname} does not resolve, so ` +
       'getLatestRelease() fell back to an empty manifest and this build ships zero download ' +
-      'links. Set PUBLIC_RELEASES_URL to a real origin at build time (it is unset in ' +
-      '.github/workflows/deploy.yml, so the astro.config.mjs default is what ships).',
+      'links. Production workflows pin this canonical origin explicitly; restore its public ' +
+      'DNS/TLS endpoint instead of substituting a fallback or weakening this gate.',
   );
 });
 
-test('the build baked a non-empty release manifest', () => {
-  const baked = html.match(
-    /<script type="application\/json" id="release-data">([\s\S]*?)<\/script>/,
-  )?.[1];
-  assert.ok(baked !== undefined, 'expected the embedded release-data script in dist/index.html');
-
-  const assets = JSON.parse(baked);
-  assert.ok(
-    Object.keys(assets).length > 0,
-    'the build embedded an empty asset map, so the OS-detect script has nothing to point the ' +
-      'primary download button at and every platform renders as "coming soon". This is the ' +
-      'silent failure mode of the catch in src/lib/releases.ts getLatestRelease().',
-  );
-});
-
-test('every embedded asset URL is an https URL on the releases origin', () => {
+test('latest.json is valid and complete for every supported platform', async () => {
   const origin = releasesOriginFromBuild();
-  const baked = html.match(
-    /<script type="application\/json" id="release-data">([\s\S]*?)<\/script>/,
-  )?.[1];
-  for (const [platform, asset] of Object.entries(JSON.parse(baked ?? '{}'))) {
-    assert.ok(
-      typeof asset?.url === 'string' && asset.url.startsWith(`${origin}/`),
-      `${platform}'s download URL must be an https URL on ${origin}, got ${asset?.url}`,
-    );
-  }
+  let response;
+  await assert.doesNotReject(async () => {
+    response = await fetch(`${origin}/releases/latest.json`);
+  }, `expected ${origin} to resolve and present valid TLS`);
+  assert.equal(response.status, 200, `expected ${origin}/releases/latest.json to return HTTP 200`);
+  assert.match(response.headers.get('content-type') ?? '', /application\/json/iu);
+
+  const manifest = await response.json();
+  assert.match(manifest.version, /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/u);
+  assert.ok(Number.isFinite(Date.parse(manifest.releasedAt)), 'releasedAt must be an ISO timestamp');
+  assertCompleteAssets(manifest.assets, origin, 'latest.json');
+});
+
+test('the build baked the complete same-origin release asset set', () => {
+  const origin = releasesOriginFromBuild();
+  assertCompleteAssets(embeddedAssets(), origin, 'built release data');
 });
