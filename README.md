@@ -26,7 +26,19 @@ PUBLIC_RELEASES_URL=https://downloads.threefa.app  # S3/CloudFront base URL
 SITE_URL=https://threefa.app
 ```
 
-If no manifest is published yet, the site still builds and shows "coming soon".
+The canonical production release origin is `https://downloads.threefa.app`: a
+CloudFront HTTPS distribution in front of the `threefa-releases` S3 bucket. Both
+the Pages deployment and the scheduled release monitor pin that origin
+explicitly. This is the reviewed architecture boundary, not evidence that the
+external DNS, certificate, distribution, bucket, or release objects have been
+provisioned.
+
+Local and pull-request builds retain the fail-safe behavior: if no manifest is
+available, the site still builds and shows "coming soon." Production Pages
+deployment is stricter. It runs `npm run test:releases-origin` after the build
+and refuses to deploy unless public DNS/TLS works and `latest.json` contains
+complete macOS, Windows, and Linux assets with positive sizes, full SHA-256
+digests, and same-origin HTTPS URLs.
 
 Releases (the zips this site links to) are produced and uploaded from the
 **frontend repo** (`3fa-desktop.rs/scripts/release/`, `package.sh` →
