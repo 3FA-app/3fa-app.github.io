@@ -1,0 +1,36 @@
+---
+import Base from '../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Base title="Your accounts, your devices — 3FA" description="Get started with a personal 3FA authenticator. Choose your device, protect access, and prepare recovery.">
+  <p class="eyebrow">3FA for individuals</p>
+  <h1>A place for every<br />account you protect.</h1>
+  <p class="lede">Start with your own authenticator. Keep personal accounts separate from your employer’s workspace, and choose when to connect another device.</p>
+  <a class="onboarding-action" href="https://user.3fa.pro/user/onboarding">Set up my account <span aria-hidden="true">→</span></a>
+  <p>Already started? <a href="https://user.3fa.pro/user/login">Sign in to your personal account</a>.</p>
+
+  <div class="onboarding-grid">
+    <section class="onboarding-step">
+      <span class="step-number">01 / YOUR DEVICE</span>
+      <h2>Choose your app</h2>
+      <p>Use a native desktop or mobile client for your authentication codes. Check the available builds before installing.</p>
+      <a href={`${base}/download`}>Explore downloads</a>
+    </section>
+    <section class="onboarding-step">
+      <span class="step-number">02 / YOUR ACCESS</span>
+      <h2>Protect your account</h2>
+      <p>Sign in, secure your local vault, and add your first account. Keep your sign-in credential and vault recovery material separate.</p>
+    </section>
+    <section class="onboarding-step">
+      <span class="step-number">03 / YOUR RECOVERY</span>
+      <h2>Prepare for a lost device</h2>
+      <p>Review your recovery options and verify another device before you rely on it. Keep recovery material somewhere you control.</p>
+      <a href={`${base}/security`}>Read the security guide</a>
+    </section>
+  </div>
+
+  <aside class="onboarding-note">
+    <strong>Joining a company?</strong> Use your organization invitation and <a href="https://org.3fa.pro/org/login">organization sign in</a>. Your employer’s membership and permissions belong to that workspace.
+  </aside>
+</Base>
