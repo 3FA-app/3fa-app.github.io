@@ -1,0 +1,35 @@
+---
+import Base from '../layouts/Base.astro';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+
+<Base title="An authenticator workspace for your team — 3FA" description="Plan your organization’s 3FA workspace, employee enrollment, device access, and recovery responsibilities.">
+  <p class="eyebrow">3FA for organizations</p>
+  <h1>Your team.<br />Clear ownership.</h1>
+  <p class="lede">Create a company workspace with individual employee accounts. Give each person their own access, and keep membership, device enrollment, and recovery responsibilities explicit.</p>
+  <a class="onboarding-action" href="https://org.3fa.pro/org/onboarding">Set up an organization <span aria-hidden="true">→</span></a>
+  <p>Have an invitation? <a href="https://org.3fa.pro/org/login">Sign in to your organization</a>.</p>
+
+  <div class="onboarding-grid">
+    <section class="onboarding-step">
+      <span class="step-number">01 / WORKSPACE</span>
+      <h2>Name your organization</h2>
+      <p>Choose a workspace name and plan the number of employee accounts you need. Creating a workspace is separate from purchasing a subscription.</p>
+    </section>
+    <section class="onboarding-step">
+      <span class="step-number">02 / PEOPLE</span>
+      <h2>Invite each employee</h2>
+      <p>Use individual invitations and explicit roles. A matching email domain alone must never grant access to your company.</p>
+    </section>
+    <section class="onboarding-step">
+      <span class="step-number">03 / OPERATIONS</span>
+      <h2>Review access together</h2>
+      <p>Plan employee offboarding, device loss, and account recovery. Evaluate the available controls before adopting 3FA for your organization.</p>
+      <a href={`${base}/security`}>Review security controls</a>
+    </section>
+  </div>
+
+  <aside class="onboarding-note">
+    <strong>Keep support safe.</strong> Support conversations should never include one-time codes, QR enrollment secrets, vault passwords, or recovery keys. Organization administrators manage workspace access; platform administration uses a separate private service.
+  </aside>
+</Base>
