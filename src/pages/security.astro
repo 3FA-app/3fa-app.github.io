@@ -11,22 +11,23 @@ const base = import.meta.env.BASE_URL.replace(/\/$/, '');
 >
   <h1>Security</h1>
   <p class="lede">
-    3FA is built so that even we can't read your secrets. Here's exactly how, and
-    how to report a problem.
+    3FA uses client-side vault encryption so the sync service does not need access
+    to your OTP seeds. This page separates protections in the current app from
+    additional safeguards still under development, and explains how to report a problem.
   </p>
 
   <h2>Cryptography</h2>
   <ul>
-    <li><strong>At rest:</strong> OTP seeds are encrypted with XChaCha20-Poly1305 under a data key that is wrapped by an Argon2id key derived from your passcode, and sealed to the platform Secure Enclave / TPM.</li>
+    <li><strong>At rest (implemented):</strong> the desktop vault encrypts OTP seeds using XChaCha20-Poly1305 with passcode-based Argon2id key derivation. Platform Secure Enclave / TPM key wrapping is planned, not implemented.</li>
     <li><strong>In transit / sync:</strong> the entire vault is end-to-end encrypted on your device before upload. The server stores only ciphertext and a version vector — it has no key capable of decrypting it (zero-knowledge).</li>
     <li><strong>Standards:</strong> codes follow RFC 6238 (TOTP) and RFC 4226 (HOTP), verified against the official RFC test vectors.</li>
-    <li><strong>Biometrics:</strong> fingerprint and voiceprint data never leave your machine.</li>
+    <li><strong>Biometrics (not yet available for unlock):</strong> biometric and voice-based factors are planned. The current desktop unlock flow does not collect them as working factors.</li>
   </ul>
 
   <h2>Access control</h2>
   <ul>
-    <li>Multi-factor unlock (passcode, biometric, passkey, voice); configure 2FA or 3FA to taste.</li>
-    <li>Auto-lock after 90 seconds idle; extending up to 5 minutes requires a second, distinct factor.</li>
+    <li><strong>Current desktop unlock:</strong> a six-digit passcode. A multi-factor policy engine exists, but biometric, passkey, and voice factors are not yet wired into the unlock flow. Configurable 2FA/3FA unlock is not currently available.</li>
+    <li><strong>Idle protection:</strong> the desktop app automatically locks after inactivity. Longer idle time conditioned on a second factor is a design goal, not a shipped capability.</li>
     <li>Per-device sync tokens that can be revoked individually.</li>
   </ul>
 
