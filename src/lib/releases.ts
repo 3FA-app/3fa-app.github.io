@@ -68,7 +68,7 @@ function sanitize(input: unknown): ReleaseManifest {
   const manifest = input as Record<string, unknown>;
   if (
     typeof manifest.version !== 'string' ||
-    !/^\\d+\\.\\d+\\.\\d+(?:[-+][0-9A-Za-z.-]+)?$/u.test(manifest.version) ||
+    !/^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/u.test(manifest.version) ||
     typeof manifest.releasedAt !== 'string' ||
     !Number.isFinite(Date.parse(manifest.releasedAt))
   ) {
